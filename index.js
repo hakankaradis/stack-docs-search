@@ -20,8 +20,7 @@ replaceHclToYaml = function(title, str) {
       try {
         return a[k] = json2yml.stringify(hcl2json(v));
       } catch (_error) {
-        err = _error;
-        return console.log(title, v);
+        return _error;
       }
     }
   });
@@ -29,34 +28,31 @@ replaceHclToYaml = function(title, str) {
 };
 
 recreateDocs = function(callback) {
-  return fs.stat("/terraform", function(err, res) {
-    if (err) {
-      child_process.execSync("git clone https://github.com/hashicorp/terraform/ --depth 1; rm -rf ./terraform/.git");
-    }
-    return recursive('terraform/website/source/docs', function(err, files) {
-      var content;
-      content = [];
-      files.forEach(function(path, k) {
-        var data, title;
-        data = fs.readFileSync(path, 'utf-8');
-        if (path.indexOf(".md") > 0 || path.indexOf(".markdown") > 0) {
-          title = data.substring(data.indexOf('page_title:') + 13, data.indexOf('sidebar_current:') - 2);
-          return content.push({
-            value: title,
-            path: path,
-            data: replaceHclToYaml(title, data),
-            marked: marked(data)
-          });
-        }
-      });
-      fs.writeFileSync("./website/docs.json", JSON.stringify(content, null, "\t"));
-      fs.writeFileSync("./docs.json", JSON.stringify(content, null, "\t"));
-      return callback(null);
+  child_process.execSync("git clone https://github.com/hashicorp/terraform/ --depth 1; rm -rf ./terraform/.git");
+  return recursive('terraform/website/source/docs/providers', function(err, files) {
+    var content;
+    content = [];
+    files.forEach(function(path, k) {
+      var data, title;
+      data = fs.readFileSync(path, 'utf-8');
+      if (path.indexOf(".md") > 0 || path.indexOf(".markdown") > 0) {
+        title = data.substring(data.indexOf('page_title:') + 13, data.indexOf('sidebar_current:') - 2);
+        return content.push({
+          value: title,
+          path: path,
+          data: replaceHclToYaml(title, data),
+          marked: marked(data)
+        });
+      }
     });
+
+    child_process.execSync("rm -rf ./terraform", { cwd: __dirname} );
+    fs.writeFileSync("./website/docs.json", JSON.stringify(content, null, "\t"));
+    fs.writeFileSync("./docs.json", JSON.stringify(content, null, "\t"));
+    return callback(null);
   });
 };
 
-console.log('dirname', __dirname)
 docs = JSON.parse(fs.readFileSync(path.join(__dirname, "./docs.json")));
 
 searchDocs = function(query) {
