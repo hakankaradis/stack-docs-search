@@ -11,20 +11,22 @@ path = require('path')
 getTokenFromMarkdown = require('./utils/getTokenFromMarkdown');
 
 replaceHclToYaml = function(title, str) {
-  var a;
-  str = str.split("...").join("# ...");
-  a = str.split("```");
-  a.forEach(function(v, k) {
-    var err;
-    if (k % 2 === 1) {
-      try {
-        return a[k] = json2yml.stringify(hcl2json(v));
-      } catch (_error) {
-        return _error;
-      }
+  str = str.replace(/---(.*?(\n))+.*---/g, '');
+  str = str.replace(/\.\.\./g, "# ...");
+
+  var regEx = /```(hcl|)(\n(?:\n|.)*?)```/g;
+
+  while(hcl = regEx.exec(str)) {
+    try {
+      var foo = "yaml\n" + json2yml.stringify(hcl2json(hcl[2]));
+      str  = str.replace(hcl[1] + hcl[2], foo);
+    } catch (error) {
+      console.log('failed on title', title, error);
     }
-  });
-  return a.join("```");
+
+  }
+
+  return str;
 };
 
 recreateDocs = function(callback) {
@@ -40,7 +42,7 @@ recreateDocs = function(callback) {
         return content.push({
           value: title,
           path: path,
-          data: data.replace(/---(.*?(\n))+.*---/g, ''),//replaceHclToYaml(title, data).replace(/---(.*?(\n))+.*---/g, ''),
+          data: replaceHclToYaml(title, data),
           marked: marked(data)
         });
       }
