@@ -40,7 +40,7 @@ recreateDocs = function(callback) {
         return content.push({
           value: title,
           path: path,
-          data: replaceHclToYaml(title, data),
+          data: replaceHclToYaml(title, data).replace(/---(.*?(\n))+.*---/g, ''),
           marked: marked(data)
         });
       }

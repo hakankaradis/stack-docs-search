@@ -4,6 +4,7 @@
   "description": "search api for terraform documentation in yaml",
   "main": "index.js",
   "dependencies": {
+    "express": "^4.15.2",
     "fuzzy": "^0.1.3",
     "hcl-to-json": "^0.0.2",
     "install": "^0.8.1",
