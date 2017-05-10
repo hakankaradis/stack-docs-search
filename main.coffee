@@ -1,6 +1,6 @@
 express = require('express')
 app = express()
-{ search, getContent } = require './index'
+{ search, getContent, recreateDocs } = require './index'
 
 app.use(express.static('./website'));
 
@@ -19,6 +19,7 @@ app.get '/getContent/:query', (req, res) ->
 server = app.listen(8081, ->
   host = server.address().address
   port = server.address().port
-  console.log 'Example app listening at http://%s:%s', host, port
+  recreateDocs ->
+    console.log 'Example app listening at http://%s:%s', host, port
   return
 )
