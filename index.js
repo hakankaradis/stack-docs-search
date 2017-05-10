@@ -7,30 +7,31 @@ hcl2json = require("hcl-to-json");
 child_process = require('child_process');
 json2yml = require('json2yaml');
 fuzzy = require("fuzzy");
-path = require('path')
+path = require('path');
 getTokenFromMarkdown = require('./utils/getTokenFromMarkdown');
 
 replaceHclToYaml = function(title, str) {
-  str = str.replace(/---(.*?(\n))+.*---/g, '');
-  str = str.replace(/\.\.\./g, "# ...");
 
-  var regEx = /```(hcl|)(\n(?:\n|.)*?)```/g;
+  return str
+    .replace(/---(.*?(\n))+.*---/g, '')
+    .replace(/\.\.\./g, "# ...")
+    .replace(/```(hcl|)(\n(?:\n|.)*?)```/g, function (match) {
+      match = match.replace(/\`\`\`(hcl|)/g, '');
+      if (/^\n\$/.test(match)) {
+        return "```bash\n" + match + "\n```";
+      }
+      try {
+        return '```yaml\n' + json2yml.stringify(hcl2json(match)).replace(/^---/,'') + '\n```';
+      } catch (err) {
+        console.log('Failed on title:', title);
+        return match;
+      }
+    });
 
-  while(hcl = regEx.exec(str)) {
-    try {
-      var foo = "yaml\n" + json2yml.stringify(hcl2json(hcl[2]));
-      str  = str.replace(hcl[1] + hcl[2], foo);
-    } catch (error) {
-      console.log('failed on title', title, error);
-    }
-
-  }
-
-  return str;
 };
 
 recreateDocs = function(callback) {
-  child_process.execSync("git clone https://github.com/hashicorp/terraform/ --depth 1; rm -rf ./terraform/.git");
+  child_process.execSync("git clone https://github.com/hashicorp/terraform.git --depth 1; rm -rf ./terraform/.git");
   return recursive('terraform/website/source/docs/providers', function(err, files) {
     var content;
     content = [];
@@ -69,18 +70,17 @@ searchDocs = function(query) {
 };
 
 getContent = function(title){
-  var content = null
-  length = docs.length
+  var content = null;
+  length = docs.length;
   for (var i=0; i<length; i++){
-    var doc = docs[i]
+    var doc = docs[i];
     if(docs[i].value == title){
-      content = docs[i].data
-      break
+      content = docs[i].data;
+      break;
     }
   }
-
-  return content
-}
+  return content;
+};
 
 search = function(query) {
   var matches, options, results;
@@ -93,9 +93,9 @@ search = function(query) {
   };
   results = fuzzy.filter(query, docs, options);
   matches = results.map(function(el) {
-    final = []
-    description = getTokenFromMarkdown(el.original.data, ['heading', 'code'])
-    return({title: el.string, description: description})
+    final = [];
+    description = getTokenFromMarkdown(el.original.data, ['heading', 'code']);
+    return({title: el.string, description: description});
   });
   return matches;
 };

@@ -20,6 +20,6 @@ server = app.listen(8081, ->
   host = server.address().address
   port = server.address().port
   recreateDocs ->
-  console.log 'Example app listening at http://%s:%s', host, port
+    console.log 'Example app listening at http://%s:%s', host, port
   return
 )
